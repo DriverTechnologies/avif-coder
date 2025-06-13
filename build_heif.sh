@@ -25,19 +25,14 @@
 #
 
 set -e
-# Resolve NDK path for CI/local builds
-NDK_PATH="${NDK_PATH:-${ANDROID_NDK:-${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-$NDK}}}}"
-if [ -z "$NDK_PATH" ]; then
-  echo "ERROR: NDK_PATH is not set and ANDROID_NDK(_HOME/_ROOT) not found." >&2
-  exit 1
-fi
+
+export NDK_PATH="/Users/radzivon/Library/Android/sdk/ndk/28.0.12674087"
 export NDK=$NDK_PATH
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-HOST_TAG="$OS-x86_64"
 
 destination_directory=libheif
 if [ ! -d "$destination_directory" ]; then
     git clone --depth 1 --branch v1.16.0 https://github.com/strukturag/libheif -b v1.18.0
+#     git clone --depth 1 https://github.com/strukturag/libheif
 else
     echo "Destination directory '$destination_directory' already exists. Cloning skipped."
 fi
@@ -52,30 +47,29 @@ for abi in ${ABI_LIST}; do
   cd "build-${abi}"
   cp -r ./../../libde265/build-${abi}/libde265/de265-version.h ../../libde265/libde265/de265-version.h
   cp -r ./../../x265_git/build-${abi}/x265_config.h ./../../x265_git/source/x265_config.h
-  cp -r ./../../dav1d/build-${abi}/include/dav1d/version.h ./../../dav1d/include/dav1d/version.h
-  mkdir -p ./../../SVT-AV1/svt-av1
-  cp -r ./../../SVT-AV1/Source/API/* ./../../SVT-AV1/svt-av1
+#  cp -r ./../../dav1d/build-${abi}/include/dav1d/version.h ./../../dav1d/include/dav1d/version.h
+#  mkdir -p ./../../SVT-AV1/svt-av1
+#  cp -r ./../../SVT-AV1/Source/API/* ./../../SVT-AV1/svt-av1
   cmake .. \
     -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE=$NDK/build/cmake/android.toolchain.cmake \
     -DANDROID_PLATFORM=android-24 \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=ON \
-    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
     -DWITH_EXAMPLES=0 \
     -DENABLE_PLUGIN_LOADING=0 \
-    -DWITH_AOM=ON \
-    -DWITH_DAV1D=ON \
-    -DAOM_INCLUDE_DIR=../../aom \
-    -DAOM_LIBRARY=../../aom/build-${abi}/libaom.so \
+    -DWITH_AOM=OFF \
+    -DWITH_DAV1D=OFF \
     -DAOM_DECODER=OFF \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
+    -DAOM_ENCODER=OFF \
     -DWITH_AOM_DECODER=OFF \
-    -DX265_INCLUDE_DIR=../../x265_git/source \
-    -DX265_LIBRARY=../../x265_git/build-${abi}/libx265.so \
-    -DLIBDE265_LIBRARY=../../libde265/build-${abi}/libde265/libde265.so \
+    -DWITH_KVAZAAR=ON \
+    -DWITH_X265=ON \
+    -DX265_INCLUDE_DIR=./../../x265_git/source \
+    -DX265_LIBRARY=./../../x265_git/build-${abi}/libx265.so \
+    -DLIBDE265_LIBRARY=./../../libde265/build-${abi}/libde265/libde265.so \
     -DLIBDE265_INCLUDE_DIR=../../libde265 \
-    -DDAV1D_INCLUDE_DIR=../../dav1d/include \
-    -DDAV1D_LIBRARY=../../dav1d/build-${abi}/src/libdav1d.so \
     -DLIBSHARPYUV_INCLUDE_DIR=../../libwebp \
     -DLIBSHARPYUV_LIBRARY=../../libwebp/build-${abi}/libsharpyuv.a \
     -DENABLE_MULTITHREADING_SUPPORT=TRUE \
@@ -83,7 +77,7 @@ for abi in ${ABI_LIST}; do
     -DBUILD_TESTING=OFF \
     -DANDROID_ABI=${abi}
   ninja
-  ${NDK_PATH}/toolchains/llvm/prebuilt/$HOST_TAG/bin/llvm-strip libheif/libheif.so
+  ${NDK_PATH}/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-strip libheif/libheif.so
   cd ..
 done
 

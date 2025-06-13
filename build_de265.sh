@@ -26,31 +26,25 @@
 
 set -e
 
-# Resolve NDK path for CI/local builds
-NDK_PATH="${NDK_PATH:-${ANDROID_NDK:-${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-$NDK}}}}"
-if [ -z "$NDK_PATH" ]; then
-  echo "ERROR: NDK_PATH is not set and ANDROID_NDK(_HOME/_ROOT) not found." >&2
-  exit 1
-fi
+export NDK_PATH="/Users/radzivon/Library/Android/sdk/ndk/26.2.11394342"
+
 export NDK=$NDK_PATH
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-HOST_TAG="$OS-x86_64"
 
 destination_directory=libde265
 if [ ! -d "$destination_directory" ]; then
-    git clone https://github.com/strukturag/libde265 -b v1.0.15
+    git clone https://github.com/strukturag/libde265 -b v1.0.16
 else
     echo "Destination directory '$destination_directory' already exists. Cloning skipped."
 fi
 
 cd libde265
 
-if [ -z "$INCLUDE_X86" ]; then
-  ABI_LIST="armeabi-v7a arm64-v8a x86_64"
-  echo "X86 won't be included into a build"
-else
+#if [ -z "$INCLUDE_X86" ]; then
+#  ABI_LIST="armeabi-v7a arm64-v8a x86_64"
+#  echo "X86 won't be included into a build"
+#else
   ABI_LIST="armeabi-v7a arm64-v8a x86 x86_64"
-fi
+#fi
 
 for abi in ${ABI_LIST}; do
   rm -rf "build-${abi}"
@@ -61,7 +55,7 @@ for abi in ${ABI_LIST}; do
     -DCMAKE_TOOLCHAIN_FILE=$NDK/build/cmake/android.toolchain.cmake \
     -DANDROID_PLATFORM=android-24 \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
     -DBUILD_SHARED_LIBS=ON \
     -DCMAKE_BUILD_TYPE=Release \
     -DENABLE_DOCS=0 \
@@ -70,9 +64,10 @@ for abi in ${ABI_LIST}; do
     -DENABLE_TESTS=0 \
     -DENABLE_TOOLS=0 \
     -DDISABLE_SSE=1 \
+    -DCMAKE_ANDROID_STL_TYPE=c++_shared \
     -DANDROID_ABI=${abi}
   ninja
-  $NDK/toolchains/llvm/prebuilt/$HOST_TAG/bin/llvm-strip libde265/libde265.so
+  $NDK/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-strip libde265/libde265.so
   cd ..
 done
 

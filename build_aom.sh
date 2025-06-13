@@ -26,39 +26,17 @@
 
 set -e
 
-# Resolve NDK path for CI/local builds
-NDK_PATH="${NDK_PATH:-${ANDROID_NDK:-${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-$NDK}}}}"
-if [ -z "$NDK_PATH" ]; then
-  echo "ERROR: NDK_PATH is not set and ANDROID_NDK(_HOME/_ROOT) not found." >&2
-  exit 1
-fi
+export NDK_PATH="/Users/radzivon/Library/Android/sdk/ndk/28.0.12674087"
 export NDK=$NDK_PATH
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-HOST_TAG="$OS-x86_64"
-NASM_BIN=$(command -v nasm || true)
 
 destination_directory=aom
 if [ ! -d "$destination_directory" ]; then
-    git clone https://aomedia.googlesource.com/aom -b v3.9.1
+    git clone https://aomedia.googlesource.com/aom -b v3.10.0
 else
     echo "Destination directory '$destination_directory' already exists. Cloning skipped."
 fi
 
 cd aom
-
-verify_align() {
-  local so="$1"
-  local tool="$NDK/toolchains/llvm/prebuilt/$HOST_TAG/bin/llvm-readobj"
-  if [ ! -x "$tool" ]; then
-    echo "WARNING: llvm-readobj not found; skipping alignment check for $so"
-    return 0
-  fi
-  if ! "$tool" -l "$so" | grep -q "Align: 0x4000"; then
-    echo "ERROR: $so not aligned to 0x4000 (16KB)" >&2
-    "$tool" -l "$so" || true
-    exit 1
-  fi
-}
 
 ABI_LIST="armeabi-v7a arm64-v8a x86 x86_64"
 
@@ -71,23 +49,24 @@ for abi in ${ABI_LIST}; do
         cmake .. \
           -G Ninja \
           -DCMAKE_TOOLCHAIN_FILE=$NDK_PATH/build/cmake/android.toolchain.cmake \
+          -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
           -DANDROID_PLATFORM=android-24 \
           -DCMAKE_BUILD_TYPE=Release \
           -DBUILD_SHARED_LIBS=ON \
           -DCMAKE_BUILD_TYPE=Release \
           -DENABLE_DOCS=0 \
-          -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
+          -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
           -DAOM_TARGET_CPU=generic \
           -DENABLE_EXAMPLES=0 \
           -DENABLE_TESTDATA=0 \
           -DCONFIG_AV1_DECODER=OFF \
-          -DCONFIG_MULTITHREAD=1 \
+          -DCONFIG_MULTITHREAD=0 \
           -DENABLE_TESTS=0 \
           -DENABLE_TOOLS=0 \
           -DCONFIG_PIC=1 \
           -DCONFIG_AV1_DECODER=0 \
           -DANDROID_ABI=${abi} \
-          $( [ -n "$NASM_BIN" ] && echo -DCMAKE_ASM_NASM_COMPILER=$NASM_BIN )
+          -DCMAKE_ASM_NASM_COMPILER=/opt/homebrew/bin/nasm
   else
     cmake .. \
       -G Ninja \
@@ -97,7 +76,7 @@ for abi in ${ABI_LIST}; do
       -DBUILD_SHARED_LIBS=ON \
       -DCMAKE_BUILD_TYPE=Release \
       -DENABLE_DOCS=0 \
-      -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
+      -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
       -DCONFIG_AV1_DECODER=OFF \
       -DENABLE_EXAMPLES=0 \
       -DENABLE_TESTDATA=0 \
@@ -105,20 +84,20 @@ for abi in ${ABI_LIST}; do
       -DENABLE_TESTS=0 \
       -DENABLE_TOOLS=0 \
       -DCONFIG_PIC=1 \
-      -DDCONFIG_AV1_DECODER=0 \
-      -DANDROID_ABI=${abi}
+      -DANDROID_ABI=${abi} \
+      -DCMAKE_ASM_COMPILER=/opt/homebrew/bin/nasm
   fi
   ninja
 
-  current_folder=$(pwd)
+  # shellcheck disable=SC2116
+  current_folder=$(echo pwd)
   echo "libaom has built for arch ${abi} at path ${current_folder}"
-  $NDK/toolchains/llvm/prebuilt/$HOST_TAG/bin/llvm-strip libaom.so
-  verify_align libaom.so
+  $NDK/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-strip libaom.so
   cd ..
 done
 
 for abi in ${ABI_LIST}; do
-  mkdir -p "../avif-coder/src/main/cpp/lib/${abi}"
+#  mkdir -p "../avif-coder/src/main/cpp/lib/${abi}"
   cp -r "build-${abi}/libaom.so" "../avif-coder/src/main/cpp/lib/${abi}/libaom.so"
   echo "build-${abi}/libaom.so was successfully copied to ../avif-coder/src/main/cpp/lib/${abi}/libaom.so!"
 done
