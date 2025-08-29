@@ -36,19 +36,6 @@ task("androidSourcesJar", Jar::class) {
     from(android.sourceSets.getByName("main").java.srcDirs)
 }
 
-afterEvaluate {
-    publishing {
-        publications {
-            create<MavenPublication>("mavenJava") {
-                groupId = "com.github.trydriver"
-                artifactId = "avif-coder"
-                version = "1.8.0"
-                from(components["release"])
-            }
-        }
-    }
-}
-
 android {
     publishing {
         singleVariant("release") {
@@ -108,24 +95,14 @@ android {
     }
 }
 
-
 afterEvaluate {
     publishing {
         publications {
             create<MavenPublication>("release") {
                 from(components["release"])
-                groupId = project.group.toString()
+                groupId = "com.github.trydriver"
                 artifactId = "avif-coder"
-                version = project.version.toString()
-            }
-        }
-        repositories {
-            maven {
-                url = uri("https://maven.pkg.github.com/DriverTechnologies/avif-coder")
-                credentials {
-                    username = System.getenv("GITHUB_ACTOR")
-                    password = System.getenv("GITHUB_TOKEN")
-                }
+                version = "1.8.0"
             }
         }
     }
