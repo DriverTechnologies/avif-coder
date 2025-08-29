@@ -40,11 +40,10 @@ afterEvaluate {
     publishing {
         publications {
             create<MavenPublication>("mavenJava") {
-                groupId = "com.github.awxkee"
+                groupId = "com.github.trydriver"
                 artifactId = "avif-coder"
-                version = "1.6.4"
+                version = "1.8.0"
                 from(components["release"])
-//                artifact("androidSourcesJar")
             }
         }
     }
@@ -59,7 +58,7 @@ android {
     }
 
     namespace = "com.github.awxkee.avifcoder"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 24
@@ -108,6 +107,30 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 }
+
+
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("release") {
+                from(components["release"])
+                groupId = project.group.toString()
+                artifactId = "avif-coder"
+                version = project.version.toString()
+            }
+        }
+        repositories {
+            maven {
+                url = uri("https://maven.pkg.github.com/DriverTechnologies/avif-coder")
+                credentials {
+                    username = System.getenv("GITHUB_ACTOR")
+                    password = System.getenv("GITHUB_TOKEN")
+                }
+            }
+        }
+    }
+}
+
 dependencies {
-    implementation("androidx.annotation:annotation-jvm:1.7.1")
+    implementation("androidx.annotation:annotation-jvm:1.9.1")
 }
