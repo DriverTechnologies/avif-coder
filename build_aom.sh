@@ -53,6 +53,7 @@ for abi in ${ABI_LIST}; do
           -DBUILD_SHARED_LIBS=ON \
           -DCMAKE_BUILD_TYPE=Release \
           -DENABLE_DOCS=0 \
+          -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
           -DAOM_TARGET_CPU=generic \
           -DENABLE_EXAMPLES=0 \
           -DENABLE_TESTDATA=0 \
@@ -73,6 +74,7 @@ for abi in ${ABI_LIST}; do
       -DBUILD_SHARED_LIBS=ON \
       -DCMAKE_BUILD_TYPE=Release \
       -DENABLE_DOCS=0 \
+      -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
       -DCONFIG_AV1_DECODER=OFF \
       -DENABLE_EXAMPLES=0 \
       -DENABLE_TESTDATA=0 \

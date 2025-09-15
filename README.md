@@ -39,13 +39,14 @@ repositories {
 ```
 
 ```groovy
-implementation 'com.github.awxkee:avif-coder:1.8.0' // or any version above picker from release tags
+implementation 'com.github.DriverTechnologies:avif-coder:<Tag>' // use a Git tag from this repo
 
 // Glide avif plugin if you need one
-implementation 'com.github.awxkee:avif-coder-glide:1.8.0' // or any version above picker from release tags
+// If using Glide/Coil helpers published from this fork, use the same group
+// implementation 'com.github.DriverTechnologies:avif-coder-glide:<Tag>'
 
 // Coil avif plugin if you need one
-implementation 'com.github.awxkee:avif-coder-coil:1.8.0' // or any version above picker from release tags
+implementation 'com.github.DriverTechnologies:avif-coder-coil:<Tag>' // use a Git tag from this repo
 ```
 
 # Also supports coil integration

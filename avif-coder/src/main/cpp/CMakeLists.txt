@@ -26,6 +26,9 @@ add_library(coder SHARED JniEncoder.cpp JniException.cpp SizeScaler.cpp
         hwy/timer.cc
         algo/sleef-hwy.cpp)
 
+# Ensure compatibility with devices using 16KB memory pages
+target_link_options(coder PRIVATE "-Wl,-z,max-page-size=16384")
+
 add_library(libaom SHARED IMPORTED)
 add_library(libx265 SHARED IMPORTED)
 add_library(libheif SHARED IMPORTED)

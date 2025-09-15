@@ -57,6 +57,7 @@ for abi in ${ABI_LIST}; do
     -DANDROID_PLATFORM=android-24 \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=ON \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
     -DCMAKE_BUILD_TYPE=Release \
     -DENABLE_DOCS=0 \
     -DENABLE_EXAMPLES=0 \

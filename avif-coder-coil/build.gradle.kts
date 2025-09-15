@@ -31,6 +31,8 @@ plugins {
     id("maven-publish")
 }
 
+group = "com.github.DriverTechnologies"
+
 task("androidSourcesJar", Jar::class) {
     archiveClassifier.set("sources")
     from(android.sourceSets.getByName("main").java.srcDirs)
@@ -40,9 +42,13 @@ afterEvaluate {
     publishing {
         publications {
             create<MavenPublication>("mavenJava") {
-                groupId = "com.github.awxkee"
+                val resolvedVersion = System.getenv("VERSION")
+                    ?: System.getenv("VERSION_NAME")
+                    ?: "LOCAL"
+
+                groupId = "com.github.DriverTechnologies"
                 artifactId = "avif-coder-coil"
-                version = "1.5.12"
+                version = resolvedVersion
                 from(components.findByName("release"))
 //                artifact("androidSourcesJar")
             }
@@ -60,7 +66,7 @@ android {
     }
 
     namespace = "com.github.awxkee.avifcoil"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 24

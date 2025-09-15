@@ -36,20 +36,6 @@ task("androidSourcesJar", Jar::class) {
     from(android.sourceSets.getByName("main").java.srcDirs)
 }
 
-afterEvaluate {
-    publishing {
-        publications {
-            create<MavenPublication>("mavenJava") {
-                groupId = "com.github.awxkee"
-                artifactId = "avif-coder"
-                version = "1.6.4"
-                from(components["release"])
-//                artifact("androidSourcesJar")
-            }
-        }
-    }
-}
-
 android {
     publishing {
         singleVariant("release") {
@@ -59,7 +45,7 @@ android {
     }
 
     namespace = "com.github.awxkee.avifcoder"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 24
@@ -80,7 +66,8 @@ android {
 
     sourceSets {
         getByName("main") {
-            jniLibs.srcDirs("src/main/jniLibs")
+            // Package prebuilt native deps (libheif, libaom, etc.) in the AAR
+            jniLibs.srcDirs("src/main/cpp/lib")
         }
     }
 
@@ -108,6 +95,20 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 }
+
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("release") {
+                from(components["release"])
+                groupId = "com.github.trydriver"
+                artifactId = "avif-coder"
+                version = "1.8.0"
+            }
+        }
+    }
+}
+
 dependencies {
-    implementation("androidx.annotation:annotation-jvm:1.7.1")
+    implementation("androidx.annotation:annotation-jvm:1.9.1")
 }
