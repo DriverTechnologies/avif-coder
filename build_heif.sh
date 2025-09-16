@@ -56,19 +56,20 @@ for abi in ${ABI_LIST}; do
     -DANDROID_PLATFORM=android-24 \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=ON \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
     -DWITH_EXAMPLES=0 \
     -DENABLE_PLUGIN_LOADING=0 \
-    -DWITH_AOM=OFF \
-    -DWITH_DAV1D=OFF \
-    -DAOM_DECODER=OFF \
-    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
-    -DAOM_ENCODER=OFF \
+    -DWITH_AOM=ON \
+    -DWITH_AOM_ENCODER=ON \
     -DWITH_AOM_DECODER=OFF \
+    -DWITH_DAV1D=ON \
+    -DAOM_INCLUDE_DIR=../../aom \
+    -DAOM_LIBRARY=../../aom/build-${abi}/libaom.so \
     -DWITH_KVAZAAR=ON \
     -DWITH_X265=ON \
-    -DX265_INCLUDE_DIR=./../../x265_git/source \
-    -DX265_LIBRARY=./../../x265_git/build-${abi}/libx265.so \
-    -DLIBDE265_LIBRARY=./../../libde265/build-${abi}/libde265/libde265.so \
+    -DX265_INCLUDE_DIR=../../x265_git/source \
+    -DX265_LIBRARY=../../x265_git/build-${abi}/libx265.so \
+    -DLIBDE265_LIBRARY=../../libde265/build-${abi}/libde265/libde265.so \
     -DLIBDE265_INCLUDE_DIR=../../libde265 \
     -DLIBSHARPYUV_INCLUDE_DIR=../../libwebp \
     -DLIBSHARPYUV_LIBRARY=../../libwebp/build-${abi}/libsharpyuv.a \
