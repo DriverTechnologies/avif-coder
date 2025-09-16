@@ -101,9 +101,9 @@ afterEvaluate {
         publications {
             create<MavenPublication>("release") {
                 from(components["release"])
-                groupId = "com.github.trydriver"
+                groupId = "com.github.DriverTechnologies"
                 artifactId = "avif-coder"
-                version = "1.8.0"
+                version = System.getenv("VERSION") ?: System.getenv("VERSION_NAME") ?: "LOCAL"
             }
         }
     }

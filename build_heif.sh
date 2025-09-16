@@ -25,8 +25,15 @@
 #
 
 set -e
-export NDK_PATH="/Users/radzivon/Library/Android/sdk/ndk/27.0.12077973"
+# Resolve NDK path for CI/local builds
+NDK_PATH="${NDK_PATH:-${ANDROID_NDK:-${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-$NDK}}}}"
+if [ -z "$NDK_PATH" ]; then
+  echo "ERROR: NDK_PATH is not set and ANDROID_NDK(_HOME/_ROOT) not found." >&2
+  exit 1
+fi
 export NDK=$NDK_PATH
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+HOST_TAG="$OS-x86_64"
 
 destination_directory=libheif
 if [ ! -d "$destination_directory" ]; then
@@ -54,7 +61,7 @@ for abi in ${ABI_LIST}; do
     -DANDROID_PLATFORM=android-24 \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=ON \
-    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
     -DWITH_EXAMPLES=0 \
     -DENABLE_PLUGIN_LOADING=0 \
     -DWITH_AOM=ON \
@@ -76,7 +83,7 @@ for abi in ${ABI_LIST}; do
     -DBUILD_TESTING=OFF \
     -DANDROID_ABI=${abi}
   ninja
-  ${NDK_PATH}/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-strip libheif/libheif.so
+  ${NDK_PATH}/toolchains/llvm/prebuilt/$HOST_TAG/bin/llvm-strip libheif/libheif.so
   cd ..
 done
 

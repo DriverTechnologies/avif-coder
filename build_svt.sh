@@ -26,7 +26,15 @@
 
 set -e
 
+# Resolve NDK path for CI/local builds
+NDK_PATH="${NDK_PATH:-${ANDROID_NDK:-${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-$NDK}}}}"
+if [ -z "$NDK_PATH" ]; then
+  echo "ERROR: NDK_PATH is not set and ANDROID_NDK(_HOME/_ROOT) not found." >&2
+  exit 1
+fi
 export NDK=$NDK_PATH
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+HOST_TAG="$OS-x86_64"
 
 destination_directory=SVT-AV1
 if [ ! -d "$destination_directory" ]; then
@@ -57,7 +65,7 @@ for abi in ${ABI_LIST}; do
     -DANDROID_PLATFORM=android-24 \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=ON \
-    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
     -DCMAKE_BUILD_TYPE=Release \
     -DENABLE_DOCS=0 \
     -DENABLE_EXAMPLES=0 \
@@ -71,7 +79,7 @@ for abi in ${ABI_LIST}; do
 
   ninja
   cp ../Bin/Release/libSvtAv1Enc.so libSvtAv1Enc.so
-  $NDK/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-strip libSvtAv1Enc.so
+  $NDK/toolchains/llvm/prebuilt/$HOST_TAG/bin/llvm-strip libSvtAv1Enc.so
   cd ..
 done
 #

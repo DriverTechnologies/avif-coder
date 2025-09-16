@@ -26,7 +26,16 @@
 
 set -e
 
+# Resolve NDK path for CI/local builds
+NDK_PATH="${NDK_PATH:-${ANDROID_NDK:-${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-$NDK}}}}"
+if [ -z "$NDK_PATH" ]; then
+  echo "ERROR: NDK_PATH is not set and ANDROID_NDK(_HOME/_ROOT) not found." >&2
+  exit 1
+fi
 export NDK=$NDK_PATH
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+HOST_TAG="$OS-x86_64"
+NASM_BIN=$(command -v nasm || true)
 
 destination_directory=aom
 if [ ! -d "$destination_directory" ]; then
@@ -36,6 +45,20 @@ else
 fi
 
 cd aom
+
+verify_align() {
+  local so="$1"
+  local tool="$NDK/toolchains/llvm/prebuilt/$HOST_TAG/bin/llvm-readobj"
+  if [ ! -x "$tool" ]; then
+    echo "WARNING: llvm-readobj not found; skipping alignment check for $so"
+    return 0
+  fi
+  if ! "$tool" -l "$so" | grep -q "Align: 0x4000"; then
+    echo "ERROR: $so not aligned to 0x4000 (16KB)" >&2
+    "$tool" -l "$so" || true
+    exit 1
+  fi
+}
 
 ABI_LIST="armeabi-v7a arm64-v8a x86 x86_64"
 
@@ -53,7 +76,7 @@ for abi in ${ABI_LIST}; do
           -DBUILD_SHARED_LIBS=ON \
           -DCMAKE_BUILD_TYPE=Release \
           -DENABLE_DOCS=0 \
-          -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
+          -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
           -DAOM_TARGET_CPU=generic \
           -DENABLE_EXAMPLES=0 \
           -DENABLE_TESTDATA=0 \
@@ -64,7 +87,7 @@ for abi in ${ABI_LIST}; do
           -DCONFIG_PIC=1 \
           -DCONFIG_AV1_DECODER=0 \
           -DANDROID_ABI=${abi} \
-          -DCMAKE_ASM_NASM_COMPILER=/opt/homebrew/bin/nasm
+          $( [ -n "$NASM_BIN" ] && echo -DCMAKE_ASM_NASM_COMPILER=$NASM_BIN )
   else
     cmake .. \
       -G Ninja \
@@ -74,7 +97,7 @@ for abi in ${ABI_LIST}; do
       -DBUILD_SHARED_LIBS=ON \
       -DCMAKE_BUILD_TYPE=Release \
       -DENABLE_DOCS=0 \
-      -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
+      -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
       -DCONFIG_AV1_DECODER=OFF \
       -DENABLE_EXAMPLES=0 \
       -DENABLE_TESTDATA=0 \
@@ -83,15 +106,14 @@ for abi in ${ABI_LIST}; do
       -DENABLE_TOOLS=0 \
       -DCONFIG_PIC=1 \
       -DDCONFIG_AV1_DECODER=0 \
-      -DANDROID_ABI=${abi} \
-      -DCMAKE_ASM_COMPILER=/opt/homebrew/bin/nasm
+      -DANDROID_ABI=${abi}
   fi
   ninja
 
-  # shellcheck disable=SC2116
-  current_folder=$(echo pwd)
+  current_folder=$(pwd)
   echo "libaom has built for arch ${abi} at path ${current_folder}"
-  $NDK/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-strip libaom.so
+  $NDK/toolchains/llvm/prebuilt/$HOST_TAG/bin/llvm-strip libaom.so
+  verify_align libaom.so
   cd ..
 done
 
