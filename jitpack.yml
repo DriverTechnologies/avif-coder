@@ -2,4 +2,16 @@ jdk:
   - openjdk17
 
 ndk:
-  version: "25.2.9519653"
+  version: "26.1.10909125"
+
+android:
+  components:
+    - tools
+    - platform-tools
+    - build-tools-36.0.0
+    - android-36
+    - cmake;3.22.1
+
+
+install:
+  - ./gradlew :avif-coder:publishReleasePublicationToMavenLocal --no-daemon -xlint -xtest --stacktrace
