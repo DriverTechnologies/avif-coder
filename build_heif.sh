@@ -58,7 +58,7 @@ for abi in ${ABI_LIST}; do
     -DBUILD_SHARED_LIBS=ON \
     -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
     -DWITH_EXAMPLES=0 \
-    -DENABLE_PLUGIN_LOADING=0 \
+    -DENABLE_PLUGIN_LOADING=1 \
     -DWITH_AOM=ON \
     -DWITH_AOM_ENCODER=ON \
     -DWITH_AOM_DECODER=OFF \
@@ -78,7 +78,12 @@ for abi in ${ABI_LIST}; do
     -DBUILD_TESTING=OFF \
     -DANDROID_ABI=${abi}
   ninja
-  ${NDK_PATH}/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-strip libheif/libheif.so
+  ${NDK_PATH}/toolchains/llvm/prebuilt/$HOST_TAG/bin/llvm-strip libheif/libheif.so
+  # Copy any encoder/decoder plugin .so produced by libheif (plugin loading enabled)
+  for plugin in $(find . -maxdepth 4 -type f -name "libheif*plugin*.so" -o -name "libheif*av1*.so" -o -name "libheif*hevc*.so"); do
+    echo "Found heif plugin: $plugin"
+    cp -f "$plugin" .
+  done
   cd ..
 done
 
@@ -86,5 +91,14 @@ done
 for abi in ${ABI_LIST}; do
   mkdir -p "../avif-coder/src/main/cpp/lib/${abi}"
   cp -r "build-${abi}/libheif/libheif.so" "../avif-coder/src/main/cpp/lib/${abi}/libheif.so"
+  # Copy plugin .so into AAR as well
+  if ls "build-${abi}"/*.so >/dev/null 2>&1; then
+    for plugin in build-${abi}/*.so; do
+      if [ "$(basename "$plugin")" != "libheif.so" ]; then
+        cp -f "$plugin" "../avif-coder/src/main/cpp/lib/${abi}/$(basename "$plugin")"
+        echo "$plugin was copied to ../avif-coder/src/main/cpp/lib/${abi}/$(basename "$plugin")"
+      fi
+    done
+  fi
   echo "build-${abi}/libheif/libheif.so was successfully copied to ../avif-coder/src/main/cpp/lib/${abi}/libheif.so!"
 done
