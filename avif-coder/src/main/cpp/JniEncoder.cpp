@@ -653,9 +653,7 @@ jbyteArray encodeBitmapAvif(JNIEnv *env,
   }
 
   result = avifEncoderAddImage(encoder.get(), image.get(), 0, AVIF_ADD_IMAGE_FLAG_SINGLE);
-  [[maybe_unused]] auto vrelease = image.release();
   if (result != AVIF_RESULT_OK) {
-    [[maybe_unused]] auto erelease = encoder.release();
     std::string str = "Can't add an image";
     throwException(env, str);
     return static_cast<jbyteArray>(nullptr);
@@ -664,13 +662,12 @@ jbyteArray encodeBitmapAvif(JNIEnv *env,
   avifRWData data = AVIF_DATA_EMPTY;
   result = avifEncoderFinish(encoder.get(), &data);
   if (result != AVIF_RESULT_OK) {
-    [[maybe_unused]] auto erelease = encoder.release();
     std::string str = "Can't encode an image";
     throwException(env, str);
     return static_cast<jbyteArray>(nullptr);
   }
 
-  [[maybe_unused]] auto erelease = encoder.release();
+  // encoder and image will be destroyed automatically by RAII when going out of scope
 
   jbyteArray byteArray = env->NewByteArray((jsize) data.size);
   char *memBuf = (char *) ((void *) data.data);
